@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { signOut } from 'next-auth/react';
 import { Bell, User, LogOut, Settings } from 'lucide-react';
+import NotificationCenter from './NotificationCenter';
+import { sampleNotifications } from './NotificationCenter';
 
 interface AdminHeaderProps {
   user: {
@@ -24,10 +26,11 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
         
         <div className="flex items-center space-x-4">
           {/* Notifications */}
-          <button className="p-2 text-gray-400 hover:text-gray-500 relative">
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400"></span>
-          </button>
+          <NotificationCenter 
+            notifications={sampleNotifications}
+            onMarkAsRead={(id) => console.log('Mark as read:', id)}
+            onMarkAllAsRead={() => console.log('Mark all as read')}
+          />
           
           {/* User Menu */}
           <div className="relative">

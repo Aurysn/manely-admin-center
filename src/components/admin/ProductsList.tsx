@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { Edit, Trash2, Eye, MoreHorizontal } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import DeleteProductButton from './DeleteProductButton';
 
 async function getProducts() {
   const products = await prisma.product.findMany({
@@ -108,9 +109,7 @@ export default async function ProductsList() {
                   >
                     <Edit className="h-4 w-4" />
                   </Link>
-                  <button className="text-gray-400 hover:text-gray-500">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </button>
+                  <DeleteProductButton productId={product.id} productName={product.name} />
                 </div>
               </div>
             </li>
