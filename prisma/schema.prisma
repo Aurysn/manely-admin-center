@@ -1,0 +1,247 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  image     String?
+  role      UserRole @default(CUSTOMER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  orders    Order[]
+  cartItems CartItem[]
+  
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+  CUSTOMER
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  image       String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  products    Product[]
+  
+  @@map("categories")
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  price       Float
+  comparePrice Float?
+  images      String   // JSON string of image URLs
+  inventory   Int      @default(0)
+  sku         String?  @unique
+  weight      Float?
+  dimensions  String?  // JSON string for length, width, height
+  isActive    Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Foreign keys
+  categoryId  String
+  
+  // Relations
+  category    Category     @relation(fields: [categoryId], references: [id])
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+  discountProducts DiscountProduct[]
+  
+  @@map("products")
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Foreign keys
+  userId    String
+  productId String
+  
+  // Relations
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, productId])
+  @@map("cart_items")
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique
+  status          OrderStatus @default(PENDING)
+  total           Float
+  subtotal        Float
+  tax             Float       @default(0)
+  shipping        Float       @default(0)
+  discountAmount  Float       @default(0)
+  customerEmail   String
+  customerName    String
+  shippingAddress String
+  billingAddress  String?
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  // Foreign keys
+  userId          String?
+  discountId      String?
+  paymentMethodId String?
+  
+  // Relations
+  user            User?       @relation(fields: [userId], references: [id])
+  discount        Discount?   @relation(fields: [discountId], references: [id])
+  paymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+  orderItems      OrderItem[]
+  
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  quantity  Int
+  price     Float    // Price at time of order
+  createdAt DateTime @default(now())
+  
+  // Foreign keys
+  orderId   String
+  productId String
+  
+  // Relations
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+  
+  @@map("order_items")
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+model Discount {
+  id          String        @id @default(cuid())
+  code        String        @unique
+  name        String
+  description String?
+  type        DiscountType
+  value       Float
+  minAmount   Float?        // Minimum order amount to apply discount
+  maxUses     Int?          // Maximum number of times this discount can be used
+  usedCount   Int           @default(0)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  
+  // Relations
+  orders      Order[]
+  products    DiscountProduct[]
+  
+  @@map("discounts")
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  FREE_SHIPPING
+}
+
+model DiscountProduct {
+  id         String   @id @default(cuid())
+  
+  // Foreign keys
+  discountId String
+  productId  String
+  
+  // Relations
+  discount   Discount @relation(fields: [discountId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@unique([discountId, productId])
+  @@map("discount_products")
+}
+
+model PaymentMethod {
+  id          String           @id @default(cuid())
+  name        String
+  type        PaymentMethodType
+  isActive    Boolean          @default(true)
+  config      String?          // JSON string for payment method configuration
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  
+  // Relations
+  orders      Order[]
+  
+  @@map("payment_methods")
+}
+
+enum PaymentMethodType {
+  STRIPE
+  PAYPAL
+  BANK_TRANSFER
+  CASH_ON_DELIVERY
+}
+
+model Analytics {
+  id        String   @id @default(cuid())
+  date      DateTime
+  type      AnalyticsType
+  value     Float
+  metadata  String?  // JSON string for additional data
+  createdAt DateTime @default(now())
+  
+  @@map("analytics")
+}
+
+enum AnalyticsType {
+  DAILY_SALES
+  DAILY_ORDERS
+  DAILY_VISITORS
+  PRODUCT_VIEWS
+  CART_ABANDONMENT
+  CONVERSION_RATE
+}
+
+model Settings {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+  
+  @@map("settings")
+}
